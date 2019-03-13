@@ -38,6 +38,7 @@ GameObject:
   - component: {fileID: 4003888798673758}
   - component: {fileID: 212816072448736002}
   - component: {fileID: 114390070807746214}
+  - component: {fileID: 114072006354730054}
   m_Layer: 0
   m_Name: Windmill
   m_TagString: Building
@@ -114,6 +115,20 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1318021250472624}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &114072006354730054
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1751311574774676}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac24c3ab99058c542aa29cfd9adad897, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  price: 100
+  buildingName: Windmill
+  owned: 0
 --- !u!114 &114390070807746214
 MonoBehaviour:
   m_ObjectHideFlags: 1

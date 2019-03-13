@@ -23,7 +23,9 @@ public class EnergyComponent : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 	}
 
 	private void Place() {
+		if(!CityManager.lastTile) return;
 		CityManager.Energy e = new CityManager.Energy(CityManager.lastTile.pos, energySource);
+		e.owned = true;
 		if(CityManager.CheckForSpot(e.pos)) CityManager.PlaceOBJ(e, price, Happiness, Economy, Health);
 		else Debug.Log("Couldn't place!");
 	}

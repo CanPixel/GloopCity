@@ -9,12 +9,13 @@ public class CityManager : MonoBehaviour {
 
 	public static CityManager self;
 
-	public GameObject factoryPrefab, windmillPrefab, solarpanelPrefab, nuclearPrefab, tilePrefab;
+	public GameObject factoryPrefab, windmillPrefab, solarpanelPrefab, nuclearPrefab, tilePrefab, smokePrefab;
 	public int terrainWidth, terrainHeight;
 
 	public GameObject windmillComponent, solarComponent, nuclearComponent;
 	private Button windmillButton, solarButton, nuclearButton;
 	private EnergyComponent windmill, solar, nuclear;
+	public EnergyComponent coalFactory;
 
 	public Color grassCol, stoneCol;
 
@@ -46,6 +47,10 @@ public class CityManager : MonoBehaviour {
 	public int Economy;
 	public int Money;
 	public float time;
+	public float timeLimit;
+	[Space(5)]
+	public int HappinessLimit;
+	public int HealthLimit, EconomyLimit;
 
 	[SerializeField]
 	public enum EnergySource {
@@ -58,6 +63,7 @@ public class CityManager : MonoBehaviour {
 		public Vector2Int pos;
 		public EnergySource src;
 		public int price;
+		public bool owned = false;
 
 		public Energy(Vector2Int pos, EnergySource src, int price = 100) {
 			this.pos = pos;
@@ -69,9 +75,15 @@ public class CityManager : MonoBehaviour {
 	[Header("Starting Buildings")]
 	public List<Energy> buildingsOnStart = new List<Energy>();
 
-	public GameObject[,] tiles;
+	public enum Property {
+		HEALTH, ECONOMY, HAPPINESS
+	}
 
+	public GameObject[,] tiles;
 	public static GameObject draggingOBJ = null;
+	public List<Building> buildings = new List<Building>();
+
+	private bool end = false;
 
 	void Start () {
 		self = this;
@@ -93,9 +105,8 @@ public class CityManager : MonoBehaviour {
 	}
 	
 	void FixedUpdate () {
-		//Time
 		time += Time.deltaTime;
-		if(time > 180) EndGame(); //Time limit?
+		if(time > timeLimit || GameWon()) EndGame(); //Time limit?
 
 		UITick();
 
@@ -103,7 +114,11 @@ public class CityManager : MonoBehaviour {
 	}
 
 	public static bool CheckForSpot(Vector2Int pos) {
-		return self.tiles[pos.x, pos.y].GetComponent<Tile>().isAvailable();
+		return self.tiles[pos.x, pos.y].GetComponent<Tile>().isAvailable() & self.tiles[pos.x, pos.y].GetComponent<Tile>().isUnlocked();
+	}
+
+	public bool GameWon() {
+		return Health >= HealthLimit & Economy >= EconomyLimit & Happiness >= HappinessLimit;
 	}
 
 	public static void PlaceOBJ(Energy e, int price, int happiness, int economy, int health) {
@@ -121,6 +136,10 @@ public class CityManager : MonoBehaviour {
 		EcoTXT.text = Economy.ToString();
 		HealthTXT.text = Health.ToString();
 
+		HappinessTXT.color = (Happiness > 0)? PriceTag.self.green : PriceTag.self.red;
+		EcoTXT.color = (Economy > 0)? PriceTag.self.green : PriceTag.self.red;
+		HealthTXT.color = (Health > 0)? PriceTag.self.green : PriceTag.self.red;
+
 		int minutes = (int)time / 60;
 		int seconds = (int)time - minutes * 60;
 		TimeTXT.text = minutes.ToString() + ":" + ((seconds.ToString().Length < 2)? ("0" + seconds.ToString()) : seconds.ToString());
@@ -131,11 +150,16 @@ public class CityManager : MonoBehaviour {
 	}
 
 	public void NextStep() {
-		Debug.Log("Next Step!");
+		foreach(Building b in buildings) {
+			if(!b) continue;
+			//Debug.Log(b.buildingName + ": " + b.gameObject.GetComponent<AddMoneyOnSecond>().moneyAmount);
+			AddMoney(b.gameObject.GetComponent<AddMoneyOnSecond>().moneyAmount);
+		}
 	}
 
 	public void EndGame() {
-		Debug.Log("Game ended!");
+		if(!end) Debug.Log("Game ended!");
+		end = true;
 	}
 
 	private void GenerateTerrain() {
@@ -152,6 +176,7 @@ public class CityManager : MonoBehaviour {
 	}
 
 	private GameObject GenerateTile(int x, int y, TileType type) {
+		if(y < 1 || y > 8 || x > 10) return null;
 		GameObject go = Instantiate(tilePrefab, new Vector2(0, 0), Quaternion.identity);
 		go.transform.SetParent(transform);
 		go.name = "Tile (" + x + ", " + y + ")";
@@ -160,32 +185,49 @@ public class CityManager : MonoBehaviour {
 		go.GetComponent<MeshRenderer>().material.color = type.col;
 		go.GetComponent<MeshRenderer>().material.SetColor("Main Color", type.col);
 		go.GetComponent<Tile>().pos = new Vector2Int(x, y);
+		go.GetComponent<Tile>().InitSmoke();
+		float road = 8;
+		float grass = 4;
+		if(y == road || y < grass) {
+			if(y < grass || y == road) go.GetComponent<Tile>().Unlock();
+			if(y == road) Destroy(go.GetComponent<Tile>());
+		}
 		return go;
 	}
 
 	protected void GenerateBuilding(Energy e) {
 		GameObject prefab;
+		EnergyComponent energyComponent;
 		switch(e.src) {
 			default:
 			case EnergySource.WINDMILL:
+				energyComponent = windmill;
 				prefab = windmillPrefab;
 				break;
 			case EnergySource.SOLARPANEL:
+				energyComponent = solar;
 				prefab = solarpanelPrefab;
 				break;
 			case EnergySource.NUCLEARPLANT:
+				energyComponent = nuclear;
 				prefab = nuclearPrefab;
 				break;
 			case EnergySource.GASFACTORY:
+				energyComponent = coalFactory;
 				prefab = factoryPrefab;
 				break;
 		}
 		GameObject go = Instantiate(prefab, new Vector2(0, 0), Quaternion.identity);
 		go.transform.SetParent(tiles[e.pos.x, e.pos.y].transform);
-		tiles[e.pos.x, e.pos.y].GetComponent<Tile>().Build(go);
-		go.transform.localPosition = new Vector3(0, 0, -20);
+		tiles[e.pos.x, e.pos.y].GetComponent<Tile>().Build(go, energyComponent);
+		go.transform.localPosition = new Vector3(0, 0, -20 + e.pos.y*2);
 		go.transform.localRotation = Quaternion.Euler(0, 0, Camera.main.transform.localEulerAngles.z);
-		if(go.GetComponent<Building>() != null) go.GetComponent<Building>().price = e.price;
+		if(go.GetComponent<Building>() != null) {
+			go.GetComponent<Building>().price = e.price;
+			go.GetComponent<Building>().owned = e.owned;
+			if(e.owned) buildings.Add(go.GetComponent<Building>());
+		}
+		tiles[e.pos.x, e.pos.y].GetComponent<Tile>().Unlock();
 		if(e.src == EnergySource.GASFACTORY) go.GetComponent<GasFactory>().particlesEnabled = true;
 	}
 
@@ -196,6 +238,43 @@ public class CityManager : MonoBehaviour {
 		go.transform.localRotation = Quaternion.Euler(0, 0, Camera.main.transform.localEulerAngles.z);
 		go.transform.localScale = new Vector3(1 - y / 10f, 1 - y / 10f, 1 - y / 10f);
 		go.GetComponent<Building>().price = price;
+	}
+
+	public static void ClearSmoke(Tile tile) {
+		self.Clean(tile);
+	}
+
+	private void Clean(Tile tile) {
+		Vector2Int basePos = tile.pos;
+		for(int x = -1; x < 2; x++)
+			for(int y = -1; y < 2; y++) {
+				try {
+					tiles[basePos.x + x, basePos.y + y].GetComponent<Tile>().Unlock();
+				} catch(System.IndexOutOfRangeException){}
+			}
+	}
+
+	public static Vector3 GetOffset() {
+		return new Vector2(self.terrainWidth / 2, self.terrainHeight / 2);
+	}
+
+	public static void ClaimBuilding(Building build) {
+		self.buildings.Add(build);
+		AddMoney(-build.price);
+	}
+
+	public static void refreshList() {
+		self.recalculate();
+	}
+
+	private void recalculate() {
+		buildings.Clear();
+		GameObject[] bds = GameObject.FindGameObjectsWithTag("Building");
+		foreach(GameObject go in bds)
+			if(go.GetComponent<Building>() != null) { 
+				Building bd = go.GetComponent<Building>();
+				if(bd.owned) buildings.Add(bd);			
+			}
 	}
 
 	public static void AddMoney(int amount) {

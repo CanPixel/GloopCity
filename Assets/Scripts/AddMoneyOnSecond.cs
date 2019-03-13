@@ -9,21 +9,19 @@ public class AddMoneyOnSecond : MonoBehaviour {
 	public bool bump = true;
 	private Vector3 baseScale;
 
+	public float bumperScale = 1;
+	public float bumpOffset = 0;
+
 	void Start() {
 		baseScale = transform.localScale;
-		StartCoroutine(Increment());
+		if(moneyAmount > 0) StartCoroutine(Increment());
 	}
 
 	void Update () {
 		constTime += Time.deltaTime;
-		//time += Time.deltaTime;
-		//if(time > 1) {
-	//		time = 0;
-//			CityManager.AddMoney(moneyAmount);
-//		}
 		if(bump) {
-			float i = Mathf.Sin(constTime * 6) / 40;
-			float j = Mathf.Cos(constTime * 6) / 50;
+			float i = Mathf.Sin(constTime * 6 + bumpOffset) / 40 * bumperScale;
+			float j = Mathf.Cos(constTime * 6 + bumpOffset) / 50 * bumperScale;
 			transform.localScale = new Vector3(baseScale.x + i, baseScale.y + j, baseScale.z);
 		}
 	}

@@ -37,6 +37,8 @@ GameObject:
   m_Component:
   - component: {fileID: 4366154405852380}
   - component: {fileID: 212156838666328226}
+  - component: {fileID: 114405996842031944}
+  - component: {fileID: 114445207456151878}
   m_Layer: 0
   m_Name: SolarPanel
   m_TagString: Building
@@ -113,6 +115,33 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1625389980874930}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &114405996842031944
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1789433631089564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 389e51e2c7d109549bf95ed62fe61c2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moneyAmount: 3
+  bump: 1
+--- !u!114 &114445207456151878
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1789433631089564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac24c3ab99058c542aa29cfd9adad897, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  price: 100
+  buildingName: Solar Panel
+  owned: 0
 --- !u!212 &212156838666328226
 SpriteRenderer:
   m_ObjectHideFlags: 1

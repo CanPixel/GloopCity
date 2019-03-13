@@ -55,8 +55,9 @@ GameObject:
   - component: {fileID: 4631771496574842}
   - component: {fileID: 212421636751969572}
   - component: {fileID: 114933648470124408}
+  - component: {fileID: 114631193180416180}
   m_Layer: 0
-  m_Name: GasFactory
+  m_Name: CoalFactory
   m_TagString: Building
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -145,6 +146,20 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1114220134856864}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &114631193180416180
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1908008225021676}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 389e51e2c7d109549bf95ed62fe61c2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moneyAmount: 1
+  bump: 1
+  bumperScale: 1
 --- !u!114 &114933648470124408
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -156,6 +171,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d0f6ff4860f164c83d2754a5572880, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  price: 100
+  buildingName: Coal Factory
+  owned: 0
+  isGassy: 1
   particlesEnabled: 0
 --- !u!198 &198209572149442748
 ParticleSystem:
