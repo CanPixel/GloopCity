@@ -9,6 +9,8 @@ public class AddMoneyOnSecond : MonoBehaviour {
 	public bool bump = true;
 	private Vector3 baseScale;
 
+	public bool ignoreYScaling = false, workOnStart = false;
+
 	public float bumperScale = 1;
 	public float bumpOffset = 0;
 
@@ -18,11 +20,12 @@ public class AddMoneyOnSecond : MonoBehaviour {
 	}
 
 	void Update () {
+		if(!CityManager.gamePlaying && !workOnStart) return;
 		constTime += Time.deltaTime;
 		if(bump) {
 			float i = Mathf.Sin(constTime * 6 + bumpOffset) / 40 * bumperScale;
 			float j = Mathf.Cos(constTime * 6 + bumpOffset) / 50 * bumperScale;
-			transform.localScale = new Vector3(baseScale.x + i, baseScale.y + j, baseScale.z);
+			transform.localScale = new Vector3(baseScale.x + i, (ignoreYScaling)?transform.localScale.y : baseScale.y + j, baseScale.z);
 		}
 	}
 

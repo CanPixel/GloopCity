@@ -24,6 +24,7 @@ public class Tile : MonoBehaviour {
 
 	public void Unlock() {
 		Destroy(smoke);
+		if(building != null) building.GetComponent<Building>().locked = false;
 		locked = false;
 	}
 
@@ -55,6 +56,7 @@ public class Tile : MonoBehaviour {
 	}
 
 	void OnMouseOver() {
+		if(!CityManager.gamePlaying) return;
 		if(PriceTag.hover) return;
 		CityManager.lastTile = this;
 		if(!outline.activeInHierarchy) targetAlpha = 1;
@@ -62,7 +64,7 @@ public class Tile : MonoBehaviour {
 	}
 
 	void OnMouseEnter() {
-		if(!isAvailable() && building.GetComponent<Building>() != null) {
+		if(!isAvailable() && building.GetComponent<Building>() != null && !building.GetComponent<Building>().locked) {
 			Building comp = building.GetComponent<Building>();
 			PriceTag.SetPriceTag(Camera.main.WorldToScreenPoint(building.transform.position) + new Vector3(80, 30, 0), comp, energy);
 		}

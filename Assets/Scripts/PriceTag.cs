@@ -46,8 +46,9 @@ public class PriceTag : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 	}
 
 	public static void SetPriceTag(Vector3 pos, Building building, EnergyComponent e) {
+		if(!CityManager.gamePlaying) return;
 		Vector3 UIpos = pos;
-		if(Input.mousePosition.x > 790) UIpos.x -= 150;
+		if(Input.mousePosition.x > 790) UIpos.x -= 100;
 		if(Input.mousePosition.y < 100) UIpos.y += 50;
 		self.transform.position = self.baseLoc = UIpos;
 		self.num = building.price;

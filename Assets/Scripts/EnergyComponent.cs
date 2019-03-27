@@ -18,6 +18,7 @@ public class EnergyComponent : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 	}
 
 	public void DragComponent() {
+		if(!CityManager.gamePlaying) return;
 		CityManager.draggingOBJ = targetOBJ;
 		MouseHover.SetMouse(targetOBJ);
 	}
@@ -31,12 +32,14 @@ public class EnergyComponent : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 	}
 
 	public void OnBeginDrag(PointerEventData pointer) {
+		if(!CityManager.gamePlaying) return;
 		if(button.interactable) DragComponent();
 	}
 
 	public void OnDrag(PointerEventData data) {}
 
 	public void OnEndDrag(PointerEventData data) {
+		if(!CityManager.gamePlaying) return;
 		if(!CityManager.draggingOBJ) return;
 		Place();
 		MouseHover.SetMouse(null);
