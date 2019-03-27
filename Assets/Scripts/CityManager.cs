@@ -7,9 +7,14 @@ using UnityEngine.UI;
 public class CityManager : MonoBehaviour {
 	public Text HappinessTXT, MoneyTXT, HealthTXT, EcoTXT, TimeTXT;
 
+	public static bool gamePlaying = false;
+
 	public static CityManager self;
 
-	public GameObject factoryPrefab, windmillPrefab, solarpanelPrefab, nuclearPrefab, tilePrefab, smokePrefab;
+	public GameObject canvas, UI_BG, darkOverlay, trashScreen;
+	private RawImage darkness;
+
+	public GameObject factoryPrefab, windmillPrefab, solarpanelPrefab, nuclearPrefab, tilePrefab, smokePrefab, toolTipPrefab;
 	public int terrainWidth, terrainHeight;
 
 	public GameObject windmillComponent, solarComponent, nuclearComponent;
@@ -64,6 +69,7 @@ public class CityManager : MonoBehaviour {
 		public EnergySource src;
 		public int price;
 		public bool owned = false;
+		public bool locked = true;
 
 		public Energy(Vector2Int pos, EnergySource src, int price = 100) {
 			this.pos = pos;
@@ -81,7 +87,7 @@ public class CityManager : MonoBehaviour {
 
 	public GameObject[,] tiles;
 	public static GameObject draggingOBJ = null;
-	public List<Building> buildings = new List<Building>();
+	public List<Building> buildings = new List<Building>(), allBuildings = new List<Building>();
 
 	private bool end = false;
 
@@ -90,9 +96,22 @@ public class CityManager : MonoBehaviour {
 		Stone = new TileType("Stone", stoneCol);
 		Grass = new TileType("Grass", grassCol);
 		City = new TileType("City", new Color(0, 0, 0, 0));
+		darkness = darkOverlay.GetComponent<RawImage>();
 		PreloadUI();
 		GenerateTerrain();
 		foreach(Energy e in buildingsOnStart) GenerateBuilding(e);
+	}
+
+	public void ToolTips() {
+		SpawnTooltip("Repeatedly press Space to make money!", Color.black, 3, new Vector2(0, 0));
+		SpawnTooltip("Press R to reset", Color.gray, 2, new Vector2(0, -50));
+
+		StartCoroutine("Tutorial");
+	}
+
+	IEnumerator Tutorial() {
+		yield return new WaitForSeconds(4);
+		SpawnTooltip("Revive the city by removing polluting sources!", new Color(0.2f, 0.2f, 0.4f), 2, new Vector2(0, 50), 0.6f);
 	}
 
 	private void PreloadUI() {
@@ -103,14 +122,20 @@ public class CityManager : MonoBehaviour {
 		solar = solarButton.GetComponent<EnergyComponent>();
 		nuclear = nuclearButton.GetComponent<EnergyComponent>();
 	}
-	
+
 	void FixedUpdate () {
-		time += Time.deltaTime;
-		if(time > timeLimit || GameWon()) EndGame(); //Time limit?
+		darkness.color = new Color(0, 0, 0, Mathf.Lerp(darkness.color.a, (gamePlaying)? 0 : 0.8f, Time.deltaTime * 2));
 
-		UITick();
+		if(gamePlaying) {
+			time += Time.deltaTime;
+			if(time > timeLimit || GameWon()) EndGame(); //Time limit?
 
-		if(Input.GetButtonDown("Jump")) NextStep();
+			UITick();
+
+			if(Input.GetButtonDown("Jump")) NextStep();
+		} else nuclearButton.interactable = windmillButton.interactable = solarButton.interactable = false;
+
+		if(Input.GetKeyUp(KeyCode.R)) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 	}
 
 	public static bool CheckForSpot(Vector2Int pos) {
@@ -118,7 +143,7 @@ public class CityManager : MonoBehaviour {
 	}
 
 	public bool GameWon() {
-		return Health >= HealthLimit & Economy >= EconomyLimit & Happiness >= HappinessLimit;
+		return Health >= HealthLimit;
 	}
 
 	public static void PlaceOBJ(Energy e, int price, int happiness, int economy, int health) {
@@ -131,8 +156,10 @@ public class CityManager : MonoBehaviour {
 	}
 
 	private void UITick() {
+		Health = Mathf.Clamp(Health, -HealthLimit, HealthLimit);
+
 		HappinessTXT.text = Happiness.ToString();
-		MoneyTXT.text = "€ " + Money.ToString();
+		MoneyTXT.text = "$ " + Money.ToString();
 		EcoTXT.text = Economy.ToString();
 		HealthTXT.text = Health.ToString();
 
@@ -150,16 +177,84 @@ public class CityManager : MonoBehaviour {
 	}
 
 	public void NextStep() {
+		int count = 0;
 		foreach(Building b in buildings) {
 			if(!b) continue;
-			//Debug.Log(b.buildingName + ": " + b.gameObject.GetComponent<AddMoneyOnSecond>().moneyAmount);
-			AddMoney(b.gameObject.GetComponent<AddMoneyOnSecond>().moneyAmount);
+			count++;
+			int amount = b.gameObject.GetComponent<AddMoneyOnSecond>().moneyAmount;
+			AddMoney(amount);
+			//UI Feedback
+			Vector2 scrPoint = Camera.main.WorldToScreenPoint(b.transform.position);
+			SpawnTooltip("+ $" + amount.ToString(), new Color(0, 1, 0), 0.5f, new Vector2(scrPoint.x, scrPoint.y + 100), 0.5f, true);
 		}
+		if(count <= 0) SpawnTooltip("No source of income!", Color.red, 1, new Vector2(0, 0));
+	}
+
+	public void SpawnTooltip(string text, Color col, float life, Vector2 pos, float scale = 0.5f, bool worldSpace = false) {
+		GameObject tip = Instantiate(toolTipPrefab, new Vector2(0, 0), Quaternion.identity);
+		tip.transform.SetParent(canvas.transform);
+		tip.transform.localPosition = pos;
+		if(worldSpace) {
+			Vector3 fin = pos;
+			if(pos.x > 380) fin = new Vector2(fin.x - 50, fin.y);
+			tip.transform.localPosition = new Vector2(0, 0);
+			tip.transform.position = fin;
+		}
+		tip.transform.localScale = new Vector2(scale, scale);
+		tip.GetComponent<Tooltip>().text = text;
+		tip.GetComponent<Tooltip>().lifeSpan = life;
+		tip.GetComponent<Tooltip>().color = col;
+	}
+
+	private Vector2 toolTipPos = new Vector2(-400, 370);
+
+	public void Burn() {
+		trashScreen.SetActive(false);
+		Health -= 100;
+		StartGame();
+
+		SpawnTooltip("Because of changes in another game,", new Color(1f, 0.4f, 0.4f), 180, new Vector2(toolTipPos.x, toolTipPos.y + 25), 0.3f);
+		SpawnTooltip("you start with lower health.", Color.red, 180, toolTipPos, 0.3f);
+	}
+	public void Recycle() {
+		trashScreen.SetActive(false);
+		Economy -= 50;
+		foreach(Building b in allBuildings) {
+			if(!b) continue;
+			b.price += 100;
+		}
+		StartGame();
+		SpawnTooltip("Because of changes in another game,", new Color(1f, 0.4f, 0.4f), 180, new Vector2(toolTipPos.x, toolTipPos.y + 25), 0.3f);
+		SpawnTooltip("Everything is more expensive.", Color.red, 180, toolTipPos, 0.3f);
+	}
+	public void Bury() {
+		trashScreen.SetActive(false);
+		int amountOfLockedTiles = 5;
+		for(int i = 0; i < amountOfLockedTiles; i++) {
+			int x = Random.Range(0, tiles.GetLength(0));
+			int y = Random.Range(0, tiles.GetLength(1));
+			if(!tiles[x, y]) {
+				i--; 
+				continue;
+			}
+			Destroy(tiles[x, y].gameObject);
+		}
+		StartGame();
+		SpawnTooltip("Because of changes in another game,", new Color(1f, 0.4f, 0.4f), 180, new Vector2(toolTipPos.x, toolTipPos.y + 25), 0.3f);
+		SpawnTooltip("You have less usable land.", Color.red, 180, toolTipPos, 0.3f);
+	}
+
+	public void StartGame() {
+		gamePlaying = true;
+		nuclearButton.interactable = windmillButton.interactable = solarButton.interactable = true;
+		ToolTips();
 	}
 
 	public void EndGame() {
 		if(!end) Debug.Log("Game ended!");
 		end = true;
+		gamePlaying = false;
+		SpawnTooltip("Game ended!", Color.white, 360, new Vector2(0, 0));
 	}
 
 	private void GenerateTerrain() {
@@ -220,14 +315,16 @@ public class CityManager : MonoBehaviour {
 		GameObject go = Instantiate(prefab, new Vector2(0, 0), Quaternion.identity);
 		go.transform.SetParent(tiles[e.pos.x, e.pos.y].transform);
 		tiles[e.pos.x, e.pos.y].GetComponent<Tile>().Build(go, energyComponent);
-		go.transform.localPosition = new Vector3(0, 0, -20 + e.pos.y*2);
+		go.transform.localPosition = new Vector3(0, 0, -20 + e.pos.y * 2);
 		go.transform.localRotation = Quaternion.Euler(0, 0, Camera.main.transform.localEulerAngles.z);
 		if(go.GetComponent<Building>() != null) {
 			go.GetComponent<Building>().price = e.price;
 			go.GetComponent<Building>().owned = e.owned;
+			go.GetComponent<Building>().locked = e.locked;
 			if(e.owned) buildings.Add(go.GetComponent<Building>());
+			allBuildings.Add(go.GetComponent<Building>());
 		}
-		tiles[e.pos.x, e.pos.y].GetComponent<Tile>().Unlock();
+		if(!e.locked) tiles[e.pos.x, e.pos.y].GetComponent<Tile>().Unlock();
 		if(e.src == EnergySource.GASFACTORY) go.GetComponent<GasFactory>().particlesEnabled = true;
 	}
 
@@ -245,12 +342,18 @@ public class CityManager : MonoBehaviour {
 	}
 
 	private void Clean(Tile tile) {
+		if(!tile) return;
 		Vector2Int basePos = tile.pos;
-		for(int x = -1; x < 2; x++)
-			for(int y = -1; y < 2; y++) {
+		int radius = 3;
+		for(int x = -(radius - 1); x < radius; x++)
+			for(int y = -(radius - 1); y < radius; y++) {
 				try {
-					tiles[basePos.x + x, basePos.y + y].GetComponent<Tile>().Unlock();
-				} catch(System.IndexOutOfRangeException){}
+					if(tiles[basePos.x + x, basePos.y + y] == null) continue;
+					Tile tilesCasasPescador = tiles[basePos.x + x, basePos.y + y].GetComponent<Tile>();
+					if(tilesCasasPescador == null) continue;
+					tilesCasasPescador.Unlock();
+					if(tilesCasasPescador.isAvailable()) tilesCasasPescador.Unlock();
+				} catch(System.IndexOutOfRangeException){continue;}
 			}
 	}
 

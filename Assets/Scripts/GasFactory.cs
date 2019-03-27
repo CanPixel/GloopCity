@@ -7,8 +7,18 @@ public class GasFactory : Building {
 
 	public bool particlesEnabled = false;
 
+	private bool started = false;
+
 	void Start () {
 		particles = transform.GetChild(0).gameObject;
-		particles.SetActive(particlesEnabled);
+		if(CityManager.gamePlaying) particles.SetActive(particlesEnabled);
+		else particles.SetActive(false);
+	}
+
+	void FixedUpdate() {
+		if(CityManager.gamePlaying && !started) {
+			started = true;
+			particles.SetActive(particlesEnabled);
+		}
 	}
 }
